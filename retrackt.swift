@@ -61,7 +61,7 @@ let escapedAlbum = escapeForAppleScript(album)
 let findScript = """
   tell application "Music"
       set output to ""
-      set theTracks to every track of library playlist 1 whose artist is "\(escapedArtist)" and album contains "\(escapedAlbum)"
+      set theTracks to every track of library playlist 1 whose artist contains "\(escapedArtist)" and album contains "\(escapedAlbum)"
       repeat with t in theTracks
           set output to output & (name of t) & linefeed
       end repeat
@@ -83,7 +83,7 @@ let trackNames =
 if trackNames.isEmpty {
   let artistScript = """
     tell application "Music"
-        count (every track of library playlist 1 whose artist is "\(escapedArtist)")
+        count (every track of library playlist 1 whose artist contains "\(escapedArtist)")
     end tell
     """
   if let artistResult = runAppleScript(artistScript) {
@@ -102,7 +102,7 @@ if trackNames.isEmpty {
 
 let albumNameScript = """
   tell application "Music"
-      set theTracks to every track of library playlist 1 whose artist is "\(escapedArtist)" and album contains "\(escapedAlbum)"
+      set theTracks to every track of library playlist 1 whose artist contains "\(escapedArtist)" and album contains "\(escapedAlbum)"
       return album of (item 1 of theTracks)
   end tell
   """
@@ -141,21 +141,28 @@ for name in trackNames {
   }
 }
 
-if toRename.isEmpty {
+if toRename.isEmpty && !renameAlbum {
   print("\nNo tracks match that suffix.")
   exit(1)
 }
 
 if dryRun {
-  print("\n\(dim)(dry run)\(reset) \(toRename.count) track(s) would be renamed.")
+  let parts = [
+    toRename.isEmpty ? nil : "\(toRename.count) track(s)",
+    renameAlbum ? "album" : nil,
+  ].compactMap { $0 }.joined(separator: " + ")
+  print("\n\(dim)(dry run)\(reset) \(parts) would be renamed.")
   exit(0)
 }
 
 // MARK: - Confirm
 
-let albumNote = renameAlbum ? " + album" : ""
+let parts = [
+  toRename.isEmpty ? nil : "\(toRename.count) track(s)",
+  renameAlbum ? "album" : nil,
+].compactMap { $0 }.joined(separator: " + ")
 
-let confirm = prompt("\nRename \(toRename.count) track(s)\(albumNote)? (y/n)")
+let confirm = prompt("\nRename \(parts)? (y/n)")
 guard confirm.lowercased() == "y" else {
   print("Cancelled.")
   exit(0)
@@ -173,7 +180,7 @@ for (i, (old, new)) in toRename.enumerated() {
   let escapedNew = escapeForAppleScript(new)
   let renameScript = """
     tell application "Music"
-        set theTracks to every track of library playlist 1 whose artist is "\(escapedArtist)" and name is "\(escapedOld)"
+        set theTracks to every track of library playlist 1 whose artist contains "\(escapedArtist)" and name is "\(escapedOld)"
         repeat with t in theTracks
             set name of t to "\(escapedNew)"
         end repeat
@@ -194,7 +201,7 @@ if renameAlbum {
   let escapedNewAlbum = escapeForAppleScript(newAlbum)
   let albumRenameScript = """
     tell application "Music"
-        set theTracks to every track of library playlist 1 whose artist is "\(escapedArtist)" and album is "\(escapedActualAlbum)"
+        set theTracks to every track of library playlist 1 whose artist contains "\(escapedArtist)" and album is "\(escapedActualAlbum)"
         repeat with t in theTracks
             set album of t to "\(escapedNewAlbum)"
         end repeat
@@ -210,8 +217,11 @@ if renameAlbum {
 
 print("\r\u{1B}[2K", terminator: "")
 if errors == 0 {
-  let albumMsg = renameAlbum ? " Album updated." : ""
-  print("\(green)\(bold)Done!\(reset) Renamed \(renamed) track(s).\(albumMsg)")
+  let summary = [
+    renamed > 0 ? "Renamed \(renamed) track(s)." : nil,
+    renameAlbum ? "Album updated." : nil,
+  ].compactMap { $0 }.joined(separator: " ")
+  print("\(green)\(bold)Done!\(reset) \(summary)")
 } else {
   print("\(green)\(bold)Done!\(reset) Renamed \(renamed), \(red)\(errors) failed\(reset).")
 }
