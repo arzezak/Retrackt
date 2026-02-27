@@ -2,16 +2,26 @@
 
 A command-line tool that batch-renames Apple Music tracks by stripping a suffix (e.g. "(2025 Remaster)") from track and album names.
 
+## Install
+
+```
+git clone https://github.com/arzezak/Retrackt.git
+cd Retrackt
+make
+```
+
+This compiles the binary and installs it to `~/.local/bin`. If that directory isn't in your PATH, the installer will print the command to add it.
+
 ## Usage
 
 ```
-swift retrackt.swift [--dry-run] [--help]
+retrackt [--dry-run] [--help]
 ```
 
 ## Example
 
 ```
-$ swift retrackt.swift
+$ retrackt
 Artist (e.g. Steely Dan): rolling stones
 Album (e.g. The Royal Scam): let it bleed
 Suffix to remove (e.g. (2025 Remaster)): (Remastered 2019)
