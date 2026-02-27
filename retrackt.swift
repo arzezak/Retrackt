@@ -91,18 +91,26 @@ if trackNames.isEmpty {
     exit(0)
 }
 
+// MARK: - ANSI helpers
+
+let bold = "\u{1B}[1m"
+let dim = "\u{1B}[2m"
+let green = "\u{1B}[32m"
+let red = "\u{1B}[31m"
+let reset = "\u{1B}[0m"
+
 // MARK: - Preview
 
-print("\nFound \(trackNames.count) track(s):\n")
+print("\n\(bold)Found \(trackNames.count) tracks in \(album)\(reset)\n")
 
 var toRename: [(old: String, new: String)] = []
 for name in trackNames {
     if name.hasSuffix(suffix) {
         let newName = String(name.dropLast(suffix.count))
         toRename.append((old: name, new: newName))
-        print("  \"\(name)\" → \"\(newName)\"")
+        print("  \(green)\(newName)\(reset) \(dim)\(suffix)\(reset)")
     } else {
-        print("  \"\(name)\" (no change)")
+        print("  \(dim)\(name) (no change)\(reset)")
     }
 }
 
@@ -112,7 +120,7 @@ if toRename.isEmpty {
 }
 
 if dryRun {
-    print("\n(dry run) \(toRename.count) track(s) would be renamed.")
+    print("\n\(dim)(dry run)\(reset) \(toRename.count) track(s) would be renamed.")
     exit(0)
 }
 
@@ -127,7 +135,11 @@ guard confirm.lowercased() == "y" else {
 // MARK: - Rename
 
 var renamed = 0
-for (old, new) in toRename {
+var errors = 0
+for (i, (old, new)) in toRename.enumerated() {
+    print("  Renaming [\(i + 1)/\(toRename.count)] \(new)\r", terminator: "")
+    fflush(stdout)
+
     let escapedOld = escapeForAppleScript(old)
     let escapedNew = escapeForAppleScript(new)
 
@@ -145,11 +157,17 @@ for (old, new) in toRename {
     renameApple.executeAndReturnError(&renameError)
 
     if let error = renameError {
-        print("  Error renaming \"\(old)\": \(error)")
+        print("\r\(red)  Error: \"\(old)\" — \(error)\(reset)")
+        errors += 1
     } else {
-        print("  Renamed: \"\(old)\" → \"\(new)\"")
         renamed += 1
     }
 }
 
-print("\nDone! Renamed \(renamed) track(s).")
+// Clear progress line
+print("\r\u{1B}[2K", terminator: "")
+if errors == 0 {
+    print("\(green)\(bold)Done!\(reset) Renamed \(renamed) track(s).")
+} else {
+    print("\(green)\(bold)Done!\(reset) Renamed \(renamed), \(red)\(errors) failed\(reset).")
+}
