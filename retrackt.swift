@@ -10,14 +10,17 @@ let dryRun = args.contains("--dry-run")
 if args.contains("--help") || args.contains("-h") {
   print(
     """
-    Usage: retrackt [--dry-run] [--help]
+    Usage: retrackt [options]
 
-    Interactively rename Apple Music tracks by removing a suffix
+    Rename Apple Music tracks by removing a suffix
     (e.g. "(2025 Remaster)") from track names in a specific album.
 
     Options:
-      --dry-run  Preview changes without renaming
-      --help, -h Show this help message
+      --artist NAME   Artist name (prompted if omitted)
+      --album NAME    Album name (prompted if omitted)
+      --suffix TEXT   Suffix to remove (prompted if omitted)
+      --dry-run       Preview changes without renaming
+      --help, -h      Show this help message
     """)
   exit(0)
 }
@@ -31,6 +34,11 @@ func prompt(_ message: String) -> String {
     exit(1)
   }
   return input
+}
+
+func argValue(_ flag: String) -> String? {
+  guard let i = args.firstIndex(of: flag), i + 1 < args.count else { return nil }
+  return args[i + 1]
 }
 
 func escapeForAppleScript(_ string: String) -> String {
@@ -49,9 +57,9 @@ func runAppleScript(_ source: String) -> NSAppleEventDescriptor? {
 
 // MARK: - Input
 
-let artist = prompt("Artist (e.g. Steely Dan):")
-let album = prompt("Album (e.g. The Royal Scam):")
-let suffixInput = prompt("Suffix to remove (e.g. (2025 Remaster)):")
+let artist = argValue("--artist") ?? prompt("Artist (e.g. Steely Dan):")
+let album = argValue("--album") ?? prompt("Album (e.g. The Royal Scam):")
+let suffixInput = argValue("--suffix") ?? prompt("Suffix to remove (e.g. (2025 Remaster)):")
 let suffix = suffixInput.hasPrefix(" ") ? suffixInput : " \(suffixInput)"
 let escapedArtist = escapeForAppleScript(artist)
 let escapedAlbum = escapeForAppleScript(album)
