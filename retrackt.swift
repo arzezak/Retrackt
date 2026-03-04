@@ -21,7 +21,8 @@ if args.contains("--help") || args.contains("-h") {
       --suffix TEXT   Suffix to remove (prompted if omitted)
       --dry-run       Preview changes without renaming
       --help, -h      Show this help message
-    """)
+    """
+  )
   exit(0)
 }
 
@@ -42,12 +43,10 @@ func argValue(_ flag: String) -> String? {
 }
 
 func escapeForAppleScript(_ string: String) -> String {
-  string.replacingOccurrences(of: "\\", with: "\\\\")
-    .replacingOccurrences(of: "\"", with: "\\\"")
+  string.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
 }
 
-@discardableResult
-func runAppleScript(_ source: String) -> NSAppleEventDescriptor? {
+@discardableResult func runAppleScript(_ source: String) -> NSAppleEventDescriptor? {
   guard let script = NSAppleScript(source: source) else { return nil }
   var error: NSDictionary?
   let result = script.executeAndReturnError(&error)
@@ -83,10 +82,7 @@ guard let findResult = runAppleScript(findScript) else {
 }
 
 let trackNames =
-  findResult.stringValue?
-  .split(separator: "\n")
-  .map(String.init)
-  .filter { !$0.isEmpty } ?? []
+  findResult.stringValue?.split(separator: "\n").map(String.init).filter { !$0.isEmpty } ?? []
 
 if trackNames.isEmpty {
   let artistScript = """
@@ -155,20 +151,16 @@ if toRename.isEmpty && !renameAlbum {
 }
 
 if dryRun {
-  let parts = [
-    toRename.isEmpty ? nil : "\(toRename.count) track(s)",
-    renameAlbum ? "album" : nil,
-  ].compactMap { $0 }.joined(separator: " + ")
+  let parts = [toRename.isEmpty ? nil : "\(toRename.count) track(s)", renameAlbum ? "album" : nil]
+    .compactMap { $0 }.joined(separator: " + ")
   print("\n\(dim)(dry run)\(reset) \(parts) would be renamed.")
   exit(0)
 }
 
 // MARK: - Confirm
 
-let parts = [
-  toRename.isEmpty ? nil : "\(toRename.count) track(s)",
-  renameAlbum ? "album" : nil,
-].compactMap { $0 }.joined(separator: " + ")
+let parts = [toRename.isEmpty ? nil : "\(toRename.count) track(s)", renameAlbum ? "album" : nil]
+  .compactMap { $0 }.joined(separator: " + ")
 
 let confirm = prompt("\nRename \(parts)? (y/n)")
 guard confirm.lowercased() == "y" else {
@@ -226,8 +218,7 @@ if renameAlbum {
 print("\r\u{1B}[2K", terminator: "")
 if errors == 0 {
   let summary = [
-    renamed > 0 ? "Renamed \(renamed) track(s)." : nil,
-    renameAlbum ? "Album updated." : nil,
+    renamed > 0 ? "Renamed \(renamed) track(s)." : nil, renameAlbum ? "Album updated." : nil,
   ].compactMap { $0 }.joined(separator: " ")
   print("\(green)\(bold)Done!\(reset) \(summary)")
 } else {
